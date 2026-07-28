@@ -31,17 +31,17 @@ def create_team():
 
     team = Team(
         name= name,
-        city = data.get("city")
-        founded_year = data.get("founded_year")
-        coach = data.get("coach")
-        logo_url = data.get("logo_url")
+        city = data.get("city"),
+        founded_year = data.get("founded_year"),
+        coach = data.get("coach"),
+        logo_url = data.get("logo_url"),
     )
     db.session.add(team)
     db.session.commit()
     return jsonify(team.to_dict()), 201
 
 @team_bp.put("/<int:team_id>")
-@admin_required
+@admin_required()
 def update_team(team_id):
     team = Team.query.get_or_404(team_id)
     data = request.get_json(silent=True) or {}
@@ -64,7 +64,7 @@ def update_team(team_id):
 
 
 @team_bp.delete("/<int:team_id>")
-@admin_required
+@admin_required()
 def delete_team(team_id):
     team = Team.query.get_or_404(team_id)
     db.session.delete(team)
