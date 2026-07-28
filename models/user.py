@@ -20,7 +20,7 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default= datetime.utcnow, onupdate=datetime.utcnow)
 
     favorites = db.relationship(
-        "Favorite", backref="user", cascade="all, delete-orphan" lazy=True
+        "Favorite", backref="user", cascade="all, delete-orphan", lazy=True
     )
 
     #password helpers
