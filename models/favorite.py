@@ -14,8 +14,8 @@ class Favorite(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        return (
+        return {
             "id" : self.id,
             "team" : self.team.to_dict() if self.team else None,
             "created_at": self.created_at.isoformat() if self.created_at else None
-        )
+        }
