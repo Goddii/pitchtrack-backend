@@ -104,3 +104,8 @@ def reset_password():
 
     return jsonify({"message": "Password has been reset.You can now login in"}), 200
 
+@auth_bp.get("/me")
+@jwt_required()
+def get_me():
+    user = User.query.get_or_404(int(get_jwt_identity()))
+    return jsonify(user.to_dict()), 200
