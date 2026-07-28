@@ -108,7 +108,15 @@ def update_match(match_id):
     db.session.commit()
     return jsonify(match.to_dict()), 200
 
-                       
+@match_bp.delete("/<int:match_id>")
+@admin_required()
+def delete_match(match_id):
+    match = Match.query.get_or_404(match_id)
+    db.session.delete(match)
+    db.session.commit()
+    return jsonify({"message":"Match deleted"}), 200
+
+
 
 
 
