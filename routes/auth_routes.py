@@ -109,3 +109,34 @@ def reset_password():
 def get_me():
     user = User.query.get_or_404(int(get_jwt_identity()))
     return jsonify(user.to_dict()), 200
+
+@auth_bp.put("/me")
+@jwt_required()
+def update_me():
+    user = User.query.get_or_404(int(get_jwt_identity()))
+    data = request.get_json(silent=True) or {}
+
+    if "name" in data:
+        name = (data.get("name") or "").strip()
+        if not name:
+            return jsonify({"error":"Name cannot be empty"}), 400
+        user.name = name
+
+    if "email" in data:
+        new_email = (data.get("email") or "").strip().lower()
+        if not is_valid_email(new_email):
+            return jsonify({"error": "A valid email is required"}), 400
+        existing = User.query.filter_by(email=new_email).first()
+        if existing and existing.id != user.id:
+            return jsonify({"error": "That email is already in use"}), 409
+        user.email = new_email
+
+    if "password" in data and data.get("password"):
+        if not is_valid_password(data["password"]):
+            return jsonify({"error": "Password must be atleast 6 characters" }), 400
+        user.set_password(data['password'])
+
+    user.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify(user.to_dict()), 200            
