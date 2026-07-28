@@ -57,3 +57,19 @@ def login():
 
     )
     return jsonify({'token': token, 'user': user.to_dict()}), 200
+
+@auth_bp.post("/forgot-password")
+def forgot_password():
+    """
+    issues a password reset token for the given email
+    no email provider configed yet 
+    """
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # do not reveal whether email exists
+        return jsonify(
+            {"message": "if an account with that email exists, a reset link has been generated"}
+        ), 200
