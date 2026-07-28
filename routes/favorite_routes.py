@@ -30,3 +30,14 @@ def follow_team(team_id):
     db.session.commit()
     return jsonify(favorite.to_dict()), 201
 
+@favorite_bp.delete("/<int:team_id>")
+@jwt_required()
+def unfollow_team(team_id):
+    user_id = int(get_jwt_identity())
+    favorite = Favorite.query.filter_by(user_id=user_id, team_id=team_id).first()
+    if not favorite:
+        return jsonify({"error": "You are not following this team"}), 404
+
+    db.session.delete(favorite)
+    db.session.commit()
+    return jsonify({"message": "Unfollowed team"}), 200
