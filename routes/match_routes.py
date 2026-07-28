@@ -71,5 +71,46 @@ def create_match():
     return jsonify(match.to_dict()), 201
 
 
+@match_bp.put("/<int:match_id>")
+@admin_required()
+def update_match(match_id):
+    match = Match.query.get_or_404(match_id)
+    data = request.get_json(silent=True) or {}
+
+    if "home_team_id" in data:
+        if not Team.query.get(data["home_team_id"]):
+            return jsonify({"error":"a valid home_team_id is required"}), 400
+        match.home_team_id = data["home_team_id"]
+
+    if "away_team_id" in data:
+        if not Team.query.get(data["away_team_id"]):
+            return jsonify({"error": "A valid away_team_id is required"}), 400
+        match.away_team_id = data["away_team_id"]
+
+    if match.home_team_id == match.away_team_id:
+        return jsonify({"error": "A team cannot play itself"}), 400
+
+    if "match_date" in data:
+        parsed = _parse_date(data["match_date"])
+        if not parsed:
+            return jsonify({"error": "match_date must be in ISO format"}), 400
+        match.match_date = parsed
+
+    if "status" in data:
+        if data["status"] not in VALID_STATUSES:
+            return jsonify({"error": f"status must be one of {sorted(VALID_STATUSES)}"}), 400
+        match.status = data["status"]
+
+    for field in ("venue", "home_score", "away_score", "minute"):
+        if field in data:
+            setattr(match, field, data[field])
+
+    db.session.commit()
+    return jsonify(match.to_dict()), 200
+
+                       
+
+
+
 
     
