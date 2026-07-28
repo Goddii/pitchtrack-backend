@@ -1,14 +1,21 @@
-from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-
+from datetime import datetime
 from extensions import db
-from models import Favorite, Team
 
+class Favorite(db.Model):
+    __tablename__ = "favorites"
+    __tabke_args__ = (
+        db.UniqueConstraints("user_id", "team_id", name="uq_user_team_favorite"),
 
-favorite_bp = Blueprint("favorites", __name__, url_prefix="/api/favorites")
+    )
 
-@favorite_bp.get("")
-@jwt_required()
-def list_favorites():
-    user_id = int(get_jwt_identity())
-    favorites = Favorite.query.filter_by(user_id=user_id).all()
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    team_id = db.Column(db.Integer, db.ForeignKey("teams.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return (
+            "id" : self.id,
+            "team" : self.team.to_dict() if self.team else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        )
