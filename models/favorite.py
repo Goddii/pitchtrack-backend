@@ -3,8 +3,8 @@ from extensions import db
 
 class Favorite(db.Model):
     __tablename__ = "favorites"
-    __tabke_args__ = (
-        db.UniqueConstraints("user_id", "team_id", name="uq_user_team_favorite"),
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "team_id", name="uq_user_team_favorite"),
 
     )
 

@@ -1,6 +1,6 @@
 from extensions import db
 
-class Team(db.model):
+class Team(db.Model):
     __tablename__ = "teams"
 
 
