@@ -9,7 +9,7 @@ team_bp = Blueprint("teams", __name__, url_prefix="/api/teams")
 @team_bp.get("")
 def list_teams():
     teams = Team.query.order_by(Team.name.asc()).all()
-    return jsonify([t.to.dict() for t in teams]), 200
+    return jsonify([t.to_dict() for t in teams]), 200
 
 @team_bp.get("/<int:team_id>")
 def get_team(team_id):

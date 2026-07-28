@@ -71,7 +71,7 @@ def update_player(player_id):
     if "position" in data:
         if data["position"] not in VALID_POSITIONS:
             return jsonify({"error": f"Position must be one of {sorted(VALID_POSITIONS)}"}), 400
-        player.team_id = data["team_id"]
+        player.position = data["position"]
 
     for field in ("jersey_number", "nationality", "age","photo_url","bio", "attributes"):
         if field in data:

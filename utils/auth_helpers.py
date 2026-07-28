@@ -4,7 +4,7 @@ from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
 
-EMAIL_RE = re.compile(r"^[^@\s]+[^@\s]+\.[^@\s]+$")
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def is_valid_email(email):
@@ -18,7 +18,7 @@ def admin_required():
     """Route decorator: requires JWT and role =='admin' in its claims"""
     def wrapper(fn):
         @wraps(fn)
-        def decorated(args, **kwargs):
+        def decorated(*args, **kwargs):
             verify_jwt_in_request()
             claims = get_jwt()
             if claims.get("role") != "admin":

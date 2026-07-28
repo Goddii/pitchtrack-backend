@@ -21,6 +21,10 @@ class Team(db.Model):
         cascade="all, delete-orphan",
         lazy=True,
     )
+    away_matches = db.relationship(
+    "Match", foreign_keys="Match.away_team_id",
+    backref="away_team", cascade="all, delete-orphan", lazy=True,
+    )
 
     favorited_by = db.relationship(
         "Favorite", backref="team", cascade="all, delete-orphan", lazy=True

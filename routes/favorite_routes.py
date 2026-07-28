@@ -6,7 +6,7 @@ from models import Favorite, Team
 
 favorite_bp = Blueprint("favorites", __name__, url_prefix="/api/favorites")
 
-@favorite_bp.get()
+@favorite_bp.get("")
 @jwt_required()
 def list_favorites():
     user_id = int(get_jwt_identity())
