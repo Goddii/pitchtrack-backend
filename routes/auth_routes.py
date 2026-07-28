@@ -73,3 +73,34 @@ def forgot_password():
         return jsonify(
             {"message": "if an account with that email exists, a reset link has been generated"}
         ), 200
+
+    token = user.generate_reset_token()
+    db.session.commit()
+
+    return jsonify(
+        {
+            "message" : "If an account with that email exists, a reset link has been generated",
+            "reset_token": token, # todo remove once real email delivery is wired
+        }
+    ), 200
+
+@auth_bp.post("/reset-password")
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    token = data.get("token") or ""
+    new_password = data.get("new_password") or ""
+
+    if not is_valid_password(new_password):
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user or not user.reset_token_is_valid(token):
+        return jsonify({"error": "Invalid or expired reset token"}), 400
+
+    user.set_password(new_password)
+    user.clear_reset_token()
+    db.session.commit()
+
+    return jsonify({"message": "Password has been reset.You can now login in"}), 200
+
