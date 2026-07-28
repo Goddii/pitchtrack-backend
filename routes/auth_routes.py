@@ -139,4 +139,12 @@ def update_me():
     user.updated_at = datetime.utcnow()
     db.session.commit()
 
-    return jsonify(user.to_dict()), 200            
+    return jsonify(user.to_dict()), 200
+
+@auth_bp.post("/logout")
+@jwt_required()
+def logout():
+    # jwt are stateless here so "logging out" is really just the client
+    # discarding its token This endpoint exists for a consistent api contract
+    # and a place to hook in a token blocklist later if needed
+    return jsonify({"message": "Logged out successfully"}), 200            
