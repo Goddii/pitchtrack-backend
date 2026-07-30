@@ -31,6 +31,15 @@ def create_app(config_class=Config):
     app.register_blueprint(match_bp)
     app.register_blueprint(favorite_bp)
 
+    # ── AUTO-SEED ON STARTUP (Render free tier — no shell access) ──
+    try:
+        with app.app_context():
+            db.create_all()                     # Ensure tables exist
+            if not Team.query.first():          # Only seed if empty
+                from seed import seed_database
+                seed_database(app)
+    except Exception as e:
+        app.logger.warning(f"Auto-seed skipped: {e}")
 
     @app.get("/api/health")
     def health():
@@ -57,4 +66,3 @@ def create_app(config_class=Config):
         return jsonify({"error":"Token has expired"}), 401
 
     return app
-    
