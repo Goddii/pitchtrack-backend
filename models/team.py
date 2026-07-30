@@ -40,7 +40,7 @@ class Team(db.Model):
             "logo_url" : self.logo_url
         }
         if include_roster:
-            data["player"] = [p.to_dict(include_team=False) for p in self.players]
+            data["players"] = [p.to_dict(include_team=False) for p in self.players]
         return data
 
     def to_summary(self):

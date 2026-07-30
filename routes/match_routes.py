@@ -17,6 +17,11 @@ def _parse_date(value):
     except (TypeError, ValueError):
         return None
 
+@match_bp.get("/<int:match_id>")
+def get_match(match_id):
+    match = Match.query.get_or_404(match_id)
+    return jsonify(match.to_dict()), 200
+
 @match_bp.get("")
 def list_matches():
     status = request.args.get("status")

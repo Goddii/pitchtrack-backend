@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token,
     jwt_required,
@@ -10,6 +10,7 @@ from flask_jwt_extended import (
 from extensions import db
 from models import User
 from utils.auth_helpers import is_valid_email, is_valid_password
+from utils.email_helpers import send_password_reset_email
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -61,27 +62,28 @@ def login():
 @auth_bp.post("/forgot-password")
 def forgot_password():
     """
-    issues a password reset token for the given email
-    no email provider configed yet 
+    Issues a password reset token and emails it to the user via Resend.
+    Always returns the same generic message — never reveals whether
+    the email exists or whether delivery succeeded.
     """
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
 
     user = User.query.filter_by(email=email).first()
-    if not user:
-        # do not reveal whether email exists
-        return jsonify(
-            {"message": "if an account with that email exists, a reset link has been generated"}
-        ), 200
 
-    token = user.generate_reset_token()
-    db.session.commit()
+    if user:
+        token = user.generate_reset_token()
+        db.session.commit()
 
+        frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+        reset_url = f"{frontend_url}/reset-password?token={token}&email={email}"
+
+        # Send the email; log failures server-side but never tell the client.
+        send_password_reset_email(email, reset_url)
+
+    # Always return the same generic message regardless of outcome.
     return jsonify(
-        {
-            "message" : "If an account with that email exists, a reset link has been generated",
-            "reset_token": token, # todo remove once real email delivery is wired
-        }
+        {"message": "If an account with that email exists, a reset link has been generated"}
     ), 200
 
 @auth_bp.post("/reset-password")
@@ -147,4 +149,4 @@ def logout():
     # jwt are stateless here so "logging out" is really just the client
     # discarding its token This endpoint exists for a consistent api contract
     # and a place to hook in a token blocklist later if needed
-    return jsonify({"message": "Logged out successfully"}), 200            
+    return jsonify({"message": "Logged out successfully"}), 200

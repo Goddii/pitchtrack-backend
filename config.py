@@ -32,4 +32,11 @@ class Config:
 
     FRONTEND_ORIGINS = os.environ.get(
         "FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
-    ).split(",")   
+    ).split(",")
+
+    # Resend (transactional email)
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+    RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "noreply@yourdomain.com")
+
+    # Frontend URL (used for building password-reset links)
+    FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
