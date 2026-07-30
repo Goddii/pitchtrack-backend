@@ -4,16 +4,10 @@ Seed the database with sample data — a fictional Kenyan Sunday-league setup.
 Usage:
     cd pitchtrack-backend
     PYTHONPATH=. pipenv run python seed.py
-
-This will:
-  - Create an admin user (admin@pitchtrack.com / admin123)
-  - Create a regular user (user@example.com / password123)
-  - Create 8 teams, 88 players (full 11-man squads), and 14 matches
 """
 
 import random
 from datetime import datetime
-from run import app
 from extensions import db
 from models import User, Team, Player, Match, Favorite
 
@@ -22,11 +16,6 @@ ADMIN_PASSWORD = "admin123"
 USER_EMAIL = "user@example.com"
 USER_PASSWORD = "password123"
 
-# ─────────────────────────────────────────────────────────────────────────
-# TEAMS — fictional Nairobi-area Sunday league clubs. Some names are played
-# for laughs (every Kenyan estate league has a "Chips Funga FC"), some are
-# straight-faced. Grounds referenced are generic community/estate pitches.
-# ─────────────────────────────────────────────────────────────────────────
 TEAMS_DATA = [
     {"name": "Sokoni Strikers FC",       "city": "Gikomba, Nairobi",     "founded_year": 2012, "coach": "Wilson 'Professor' Mbugua"},
     {"name": "Boda Boda Bullets FC",      "city": "Kayole, Nairobi",      "founded_year": 2015, "coach": "Ali Hassan"},
@@ -38,13 +27,8 @@ TEAMS_DATA = [
     {"name": "Songa Mbele Rangers",       "city": "Kibera, Nairobi",      "founded_year": 2005, "coach": "Susan Achieng"},
 ]
 
-# ─────────────────────────────────────────────────────────────────────────
-# ROSTERS — 11 players per team in a 4-3-3 shape:
-# GK, DF, DF, DF, DF, MF, MF, MF, FW, FW, FW  (jersey numbers 1–11)
-# Format: (name, position, jersey_number, nationality, age)
-# ─────────────────────────────────────────────────────────────────────────
 ROSTERS = {
-    0: [  # Sokoni Strikers FC
+    0: [
         ("Erick Wanyonyi",   "Goalkeeper", 1,  "Kenya",  26),
         ("Bramwel Otieno",   "Defender",   2,  "Kenya",  28),
         ("Newton Kariuki",   "Defender",   3,  "Kenya",  24),
@@ -57,7 +41,7 @@ ROSTERS = {
         ("Titus Barasa",     "Forward",    10, "Kenya",  29),
         ("Cyrus Ngugi",      "Forward",    11, "Kenya",  19),
     ],
-    1: [  # Boda Boda Bullets FC
+    1: [
         ("Boniface Mwendwa", "Goalkeeper", 1,  "Kenya",    27),
         ("Fredrick Kioko",   "Defender",   2,  "Kenya",    29),
         ("Robert Chege",     "Defender",   3,  "Kenya",    24),
@@ -70,7 +54,7 @@ ROSTERS = {
         ("Duncan Maina",     "Forward",    10, "Kenya",    24),
         ("Ian Gitau",        "Forward",    11, "Kenya",    18),
     ],
-    2: [  # Mama Mboga United
+    2: [
         ("Stephen Onyango",  "Goalkeeper", 1,  "Kenya", 30),
         ("Charles Wambua",   "Defender",   2,  "Kenya", 27),
         ("Francis Gitonga",  "Defender",   3,  "Kenya", 25),
@@ -83,7 +67,7 @@ ROSTERS = {
         ("Daniel Ouma",      "Forward",    10, "Kenya", 21),
         ("Joseph Langat",    "Forward",    11, "Kenya", 25),
     ],
-    3: [  # Chips Funga FC
+    3: [
         ("Hassan Abdi",      "Goalkeeper", 1,  "Kenya", 24),
         ("Ibrahim Noor",     "Defender",   2,  "Kenya", 27),
         ("Yusuf Ali",        "Defender",   3,  "Kenya", 25),
@@ -96,7 +80,7 @@ ROSTERS = {
         ("Bashir Aden",      "Forward",    10, "Kenya", 23),
         ("Khalid Diriye",    "Forward",    11, "Kenya", 20),
     ],
-    4: [  # Sukuma Wiki Warriors
+    4: [
         ("Geoffrey Muriithi","Goalkeeper", 1,  "Kenya", 28),
         ("Nicholas Thiongo", "Defender",   2,  "Kenya", 26),
         ("Patrick Ndegwa",   "Defender",   3,  "Kenya", 24),
@@ -109,7 +93,7 @@ ROSTERS = {
         ("Vincent Karioki",  "Forward",    10, "Kenya", 29),
         ("Dennis Mwaura",    "Forward",    11, "Kenya", 20),
     ],
-    5: [  # Nyama Choma All Stars
+    5: [
         ("Joseph Sironka",   "Goalkeeper", 1,  "Kenya", 27),
         ("Daniel Saitoti",   "Defender",   2,  "Kenya", 26),
         ("Moses Ntutu",      "Defender",   3,  "Kenya", 28),
@@ -122,7 +106,7 @@ ROSTERS = {
         ("George Nkoitoi",   "Forward",    10, "Kenya", 21),
         ("Francis Ole Kina", "Forward",    11, "Kenya", 26),
     ],
-    6: [  # Late Kickoff FC
+    6: [
         ("Kennedy Muchiri",  "Goalkeeper", 1,  "Kenya", 29),
         ("Peter Gathogo",    "Defender",   2,  "Kenya", 27),
         ("James Kariba",     "Defender",   3,  "Kenya", 25),
@@ -135,7 +119,7 @@ ROSTERS = {
         ("Brian Mutugi",     "Forward",    10, "Kenya", 20),
         ("Erick Njihia",     "Forward",    11, "Kenya", 21),
     ],
-    7: [  # Songa Mbele Rangers
+    7: [
         ("Victor Omollo",    "Goalkeeper", 1,  "Kenya", 28),
         ("Kevin Onyango",    "Defender",   2,  "Kenya", 26),
         ("Brian Adero",      "Defender",   3,  "Kenya", 24),
@@ -150,11 +134,6 @@ ROSTERS = {
     ],
 }
 
-# ─────────────────────────────────────────────────────────────────────────
-# Flavor text generators — every player gets a bio combining a football
-# skill note with a "day job" joke, because nobody in a Sunday league is
-# a full-time footballer.
-# ─────────────────────────────────────────────────────────────────────────
 SKILL_BLURBS = {
     "Goalkeeper": [
         "{name} commands the box like it owes him rent, and shot-stopping is where {team} trusts him most.",
@@ -240,7 +219,6 @@ def make_attributes(position, seed_key):
             "defending": rng.randint(50, 72),
             "physical": rng.randint(60, 78),
         }
-    # Forward
     return {
         "pace": rng.randint(75, 92),
         "shooting": rng.randint(70, 90),
@@ -268,25 +246,17 @@ for _team_idx, _roster in ROSTERS.items():
         })
         _global_idx += 1
 
-# ─────────────────────────────────────────────────────────────────────────
-# MATCHES — team indices: 0=Sokoni, 1=Boda Boda Bullets, 2=Mama Mboga,
-# 3=Chips Funga, 4=Sukuma Wiki, 5=Nyama Choma, 6=Late Kickoff, 7=Songa Mbele
-# (home_idx, away_idx, date_str, status, home_score, away_score, minute, venue)
-# ─────────────────────────────────────────────────────────────────────────
 MATCHES_DATA = [
     (0, 4, "2026-08-02T15:00:00", "scheduled", None, None, None, "Gikomba Grounds"),
     (1, 3, "2026-08-02T17:30:00", "scheduled", None, None, None, "Kayole Social Hall Grounds"),
     (2, 6, "2026-08-03T14:00:00", "scheduled", None, None, None, "Kawangware Open Grounds"),
     (5, 7, "2026-08-03T16:00:00", "scheduled", None, None, None, "Ngong Road Recreation Ground"),
-
     (0, 1, "2026-07-26T15:00:00", "completed", 2, 1, None, "Gikomba Grounds"),
     (3, 2, "2026-07-26T17:00:00", "completed", 0, 0, None, "Eastleigh Airbase Grounds"),
     (4, 5, "2026-07-19T15:00:00", "completed", 3, 2, None, "Dagoretti Corner Grounds"),
     (7, 0, "2026-07-19T14:00:00", "completed", 1, 3, None, "Kibera Undugu Grounds"),
-
     (6, 4, "2026-08-09T15:00:00", "scheduled", None, None, None, "Thika Stadium Grounds"),
     (1, 5, "2026-08-09T17:00:00", "scheduled", None, None, None, "Kayole Social Hall Grounds"),
-
     (0, 3, "2026-07-31T15:00:00", "live", 1, 0, 63, "Gikomba Grounds"),
     (1, 6, "2026-07-31T15:00:00", "live", 0, 0, 27, "Kayole Social Hall Grounds"),
     (4, 7, "2026-07-31T15:30:00", "live", 2, 2, 78, "Dagoretti Corner Grounds"),
@@ -294,7 +264,8 @@ MATCHES_DATA = [
 ]
 
 
-def seed():
+def seed_database(app):
+    """Seed the database using the provided Flask app instance."""
     with app.app_context():
         print("Clearing existing data…")
         Match.query.delete()
@@ -304,7 +275,6 @@ def seed():
         User.query.delete()
         db.session.commit()
 
-        # ── Users ──
         print("Creating users…")
         admin = User(name="Admin", email=ADMIN_EMAIL, role="admin")
         admin.set_password(ADMIN_PASSWORD)
@@ -317,7 +287,6 @@ def seed():
         print(f"  ✓ Admin:   {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
         print(f"  ✓ Regular: {USER_EMAIL} / {USER_PASSWORD}")
 
-        # ── Teams ──
         print("Creating teams…")
         team_records = []
         for t in TEAMS_DATA:
@@ -328,7 +297,6 @@ def seed():
         db.session.commit()
         print(f"  ✓ {len(team_records)} teams created")
 
-        # ── Players ──
         print("Creating players…")
         player_count = 0
         for p in PLAYERS_DATA:
@@ -347,7 +315,6 @@ def seed():
         db.session.commit()
         print(f"  ✓ {player_count} players created")
 
-        # ── Matches ──
         print("Creating matches…")
         match_count = 0
         for (h_idx, a_idx, date_str, status, h_score, a_score, minute, venue) in MATCHES_DATA:
@@ -371,6 +338,12 @@ def seed():
         print(f"   Admin login: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
         print(f"   User login:  {USER_EMAIL} / {USER_PASSWORD}")
         print(f"   ─────────────────────────────────────")
+
+
+# Backward compatibility for local CLI usage
+def seed():
+    from run import app
+    seed_database(app)
 
 
 if __name__ == "__main__":
