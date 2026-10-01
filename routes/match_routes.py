@@ -5,12 +5,14 @@ from flask import Blueprint, request, jsonify
 from extensions import db
 from models import Match, PlayerMatchStat, Team
 from utils.auth_helpers import admin_required
+from utils.formations import parse_formation
 from utils.player_stats import parse_stat_row, validate_match_stats
 
 
 match_bp = Blueprint("matches", __name__, url_prefix="/api/matches")
 
 VALID_STATUSES = {"scheduled", "live", "completed"}
+FORMATION_FIELDS = ("home_formation", "away_formation")
 
 def _parse_date(value):
     try:
@@ -157,9 +159,19 @@ def update_match(match_id):
             return jsonify({"error": f"status must be one of {sorted(VALID_STATUSES)}"}), 400
         match.status = data["status"]
 
+    formations = {}
+    for field in FORMATION_FIELDS:
+        if field in data:
+            clean, error = parse_formation(data[field])
+            if error:
+                return jsonify({"error": f"{field}: {error}"}), 400
+            formations[field] = clean
+
     for field in ("venue", "home_score", "away_score", "minute"):
         if field in data:
             setattr(match, field, data[field])
+    for field, clean in formations.items():
+        setattr(match, field, clean)
 
     db.session.commit()
     return jsonify(match.to_dict()), 200

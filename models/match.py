@@ -12,6 +12,8 @@ class Match(db.Model):
     home_score = db.Column(db.Integer, nullable=True)
     away_score = db.Column(db.Integer, nullable=True)
     minute = db.Column(db.Integer, nullable=True) #elapsed minute relevanr while status == live
+    home_formation = db.Column(db.String(10), nullable=True) #eg "4-3-3"; None means work it out from the starters
+    away_formation = db.Column(db.String(10), nullable=True)
 
 
     def to_dict(self):
@@ -25,6 +27,8 @@ class Match(db.Model):
             "home_score" : self.home_score,
             "away_score" : self.away_score,
             "minute" : self.minute,
+            "home_formation" : self.home_formation,
+            "away_formation" : self.away_formation,
         }
 
     def __repr__(self):

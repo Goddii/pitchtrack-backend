@@ -1,12 +1,16 @@
-from sqlalchemy import case, func
+from collections import Counter
+
+from sqlalchemy import and_, case, func
 
 from extensions import db
 from models import Match, Player, PlayerMatchStat
 
 MAX_MINUTES = 120
+MAX_STARTERS = 11  # per team in one match
 MAX_COUNT = 30  # sanity ceiling for goals, assists and cards in one match
 COUNT_FIELDS = ("goals", "assists", "yellow_cards", "red_cards")
 GOAL_TYPE_FIELDS = ("penalty_goals", "headed_goals", "right_foot_goals", "left_foot_goals")
+LINEUP_ONLY_FIELDS = ("minutes_played", *COUNT_FIELDS, *GOAL_TYPE_FIELDS)  # must all be 0 before kickoff
 TOTAL_FIELDS = (
     "appearances", "starts", "minutes", "goals", "assists", "yellow_cards", "red_cards",
     *GOAL_TYPE_FIELDS,
@@ -18,10 +22,17 @@ def _is_int(value):
 
 
 def _total_columns():
-    """Season-total aggregates, in TOTAL_FIELDS order. An appearance is a match with at least one minute played."""
+    """Season-total aggregates, in TOTAL_FIELDS order.
+
+    An appearance is a match with at least one minute played, and a start is an appearance that began
+    in the starting eleven. A lineup announced before kickoff has no minutes yet, so it counts as neither.
+    """
     return (
         func.coalesce(func.sum(case((PlayerMatchStat.minutes_played > 0, 1), else_=0)), 0),
-        func.coalesce(func.sum(case((PlayerMatchStat.started.is_(True), 1), else_=0)), 0),
+        func.coalesce(
+            func.sum(case((and_(PlayerMatchStat.started.is_(True), PlayerMatchStat.minutes_played > 0), 1), else_=0)),
+            0,
+        ),
         func.coalesce(func.sum(PlayerMatchStat.minutes_played), 0),
         func.coalesce(func.sum(PlayerMatchStat.goals), 0),
         func.coalesce(func.sum(PlayerMatchStat.assists), 0),
@@ -136,11 +147,17 @@ def parse_stat_row(raw):
     return row, None
 
 
-def validate_match_stats(match, rows):
-    """Check a batch of parsed rows against the match. Returns an error message or None."""
-    if match.status == "scheduled":
-        return "Stats cannot be recorded for a scheduled match"
+def _lineup_only_problem(match, rows):
+    """Before kickoff only the starting lineup can be saved: who starts, with nothing played yet."""
+    if match.status != "scheduled":
+        return None
+    if any(row[field] for row in rows for field in LINEUP_ONLY_FIELDS):
+        return "Only the starting lineup can be set for a scheduled match: no minutes, goals, assists or cards"
+    return None
 
+
+def _roster_problem(match, rows):
+    """Every submitted player must exist and play for one of the two teams."""
     players = {p.id: p for p in Player.query.filter(Player.id.in_([r["player_id"] for r in rows])).all()}
     team_ids = {match.home_team_id, match.away_team_id}
 
@@ -150,18 +167,39 @@ def validate_match_stats(match, rows):
             return f"Player {row['player_id']} does not exist"
         if player.team_id not in team_ids:
             return f"{player.name} does not play for either team in this match"
-
-    # Goals per team across the whole match (rows already saved plus this batch) cannot beat the score
-    goals_by_player = {s.player_id: s.goals for s in PlayerMatchStat.query.filter_by(match_id=match.id)}
-    goals_by_player.update({r["player_id"]: r["goals"] for r in rows})
-    all_players = {p.id: p for p in Player.query.filter(Player.id.in_(list(goals_by_player))).all()}
-
-    scores = {match.home_team_id: match.home_score or 0, match.away_team_id: match.away_score or 0}
-    totals = {team_id: 0 for team_id in scores}
-    for player_id, goals in goals_by_player.items():
-        totals[all_players[player_id].team_id] += goals
-
-    for team_id, total in totals.items():
-        if total > scores[team_id]:
-            return f"Goals for a team cannot exceed the team's score ({scores[team_id]})"
     return None
+
+
+def _starters_problem(after, team_of):
+    """A team cannot start more than eleven players."""
+    starters = Counter(team_of[player_id] for player_id, row in after.items() if row["started"])
+    if any(count > MAX_STARTERS for count in starters.values()):
+        return f"A team cannot start more than {MAX_STARTERS} players"
+    return None
+
+
+def _goals_problem(match, after, team_of):
+    """Goals per team across the whole match cannot beat the score."""
+    scores = {match.home_team_id: match.home_score or 0, match.away_team_id: match.away_score or 0}
+    goals = Counter()
+    for player_id, row in after.items():
+        goals[team_of[player_id]] += row["goals"]
+
+    for team_id, score in scores.items():
+        if goals[team_id] > score:
+            return f"Goals for a team cannot exceed the team's score ({score})"
+    return None
+
+
+def validate_match_stats(match, rows):
+    """Check a batch of parsed rows against the match. Returns an error message or None."""
+    error = _lineup_only_problem(match, rows) or _roster_problem(match, rows)
+    if error:
+        return error
+
+    # The match as it would stand after saving: rows already saved, overridden by this batch
+    after = {s.player_id: {"started": s.started, "goals": s.goals} for s in PlayerMatchStat.query.filter_by(match_id=match.id)}
+    after.update({r["player_id"]: {"started": r["started"], "goals": r["goals"]} for r in rows})
+    team_of = {p.id: p.team_id for p in Player.query.filter(Player.id.in_(list(after))).all()}
+
+    return _starters_problem(after, team_of) or _goals_problem(match, after, team_of)
