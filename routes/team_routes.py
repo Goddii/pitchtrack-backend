@@ -3,6 +3,8 @@ from flask import Blueprint, request, jsonify
 from extensions import db
 from models import Team
 from utils.auth_helpers import admin_required
+from utils.player_stats import team_player_totals
+from utils.team_profile import parse_team_profile
 
 team_bp = Blueprint("teams", __name__, url_prefix="/api/teams")
 
@@ -15,6 +17,11 @@ def list_teams():
 def get_team(team_id):
     team = Team.query.get_or_404(team_id)
     return jsonify(team.to_dict(include_roster=True)), 200
+
+@team_bp.get("/<int:team_id>/player-stats")
+def get_team_player_stats(team_id):
+    Team.query.get_or_404(team_id)
+    return jsonify(team_player_totals(team_id)), 200
 
 
 @team_bp.post("")
@@ -29,12 +36,17 @@ def create_team():
     if Team.query.filter_by(name=name).first():
         return jsonify({"error":"a team with that name already exists"}), 409
 
+    profile, error = parse_team_profile(data)
+    if error:
+        return jsonify({"error": error}), 400
+
     team = Team(
         name= name,
         city = data.get("city"),
         founded_year = data.get("founded_year"),
         coach = data.get("coach"),
         logo_url = data.get("logo_url"),
+        **profile,
     )
     db.session.add(team)
     db.session.commit()
@@ -45,6 +57,10 @@ def create_team():
 def update_team(team_id):
     team = Team.query.get_or_404(team_id)
     data = request.get_json(silent=True) or {}
+
+    profile, error = parse_team_profile(data, team_id=team.id)
+    if error:
+        return jsonify({"error": error}), 400
 
     if "name" in data:
         new_name = (data.get("name") or "").strip()
@@ -58,6 +74,9 @@ def update_team(team_id):
     for field in ("city", "founded_year", "coach", "logo_url"):
         if field in data:
             setattr(team, field, data[field])
+
+    for field, value in profile.items():
+        setattr(team, field, value)
 
     db.session.commit()
     return jsonify(team.to_dict()),200

@@ -10,6 +10,12 @@ class Team(db.Model):
     founded_year = db.Column(db.Integer, nullable=True)
     coach = db.Column(db.String(120), nullable=True)
     logo_url = db.Column(db.String(500), nullable=True)
+    nickname = db.Column(db.String(120), nullable=True)
+    stadium = db.Column(db.String(120), nullable=True)
+    capacity = db.Column(db.Integer, nullable=True)
+    # A plain id, not a foreign key: teams and players already point at each other, so the routes
+    # check the player belongs to the team and clear this when that player is deleted.
+    captain_id = db.Column(db.Integer, nullable=True)
 
     players = db.relationship(
         "Player", backref="team", cascade="all, delete-orphan", lazy=True
@@ -37,7 +43,11 @@ class Team(db.Model):
             "city" : self.city,
             "founded_year" : self.founded_year,
             "coach" : self.coach,
-            "logo_url" : self.logo_url
+            "logo_url" : self.logo_url,
+            "nickname": self.nickname,
+            "stadium": self.stadium,
+            "capacity": self.capacity,
+            "captain_id": self.captain_id,
         }
         if include_roster:
             data["players"] = [p.to_dict(include_team=False) for p in self.players]
@@ -45,7 +55,7 @@ class Team(db.Model):
 
     def to_summary(self):
         """lightweight shape for nesting inside match payloads"""
-        return{"id":self.id, "name": self.name}
+        return {"id": self.id, "name": self.name, "logo_url": self.logo_url}
 
     def __repr__(self):
         return f"<Team {self.name}>"    
