@@ -117,6 +117,8 @@ def update_player(player_id):
 @admin_required()
 def delete_player(player_id):
     player = Player.query.get_or_404(player_id)
+    # captain_id is a plain id (no foreign key), so clear it here rather than leave it dangling
+    Team.query.filter_by(id=player.team_id, captain_id=player.id).update({"captain_id": None})
     db.session.delete(player)
     db.session.commit()
-    return jsonify({"message": "Player removed"}), 200               
+    return jsonify({"message": "Player removed"}), 200              
