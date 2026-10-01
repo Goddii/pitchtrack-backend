@@ -12,6 +12,7 @@ class Player(db.Model):
     photo_url = db.Column(db.String(500), nullable=True)
     bio = db.Column(db.Text, nullable=True)
     attributes = db.Column(db.JSON, nullable=True) #eg shooting
+    height_cm = db.Column(db.Integer, nullable=True)
     team_id = db.Column(db.Integer, db.ForeignKey("teams.id"), nullable=False)
 
 
@@ -23,6 +24,7 @@ class Player(db.Model):
             "jersey_number" : self.jersey_number,
             "nationality" : self.nationality,
             "age" : self.age,
+            "height_cm" : self.height_cm,
             "photo_url" : self.photo_url,
             "bio" : self.bio,
             "attributes" : self.attributes,

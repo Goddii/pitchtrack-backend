@@ -20,6 +20,9 @@ class Config:
             )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Seed demo data on first start when the database is empty; tests switch this off
+    AUTO_SEED = True
+
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-jwt-secret-change-me")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(
         minutes = int(os.environ.get("JWT_ACCESS_TOKEN_EXPIRES_MINUTES", 60))

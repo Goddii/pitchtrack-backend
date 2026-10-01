@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from extensions import db
 from models import Team
 from utils.auth_helpers import admin_required
+from utils.player_stats import team_player_totals
 
 team_bp = Blueprint("teams", __name__, url_prefix="/api/teams")
 
@@ -15,6 +16,11 @@ def list_teams():
 def get_team(team_id):
     team = Team.query.get_or_404(team_id)
     return jsonify(team.to_dict(include_roster=True)), 200
+
+@team_bp.get("/<int:team_id>/player-stats")
+def get_team_player_stats(team_id):
+    Team.query.get_or_404(team_id)
+    return jsonify(team_player_totals(team_id)), 200
 
 
 @team_bp.post("")

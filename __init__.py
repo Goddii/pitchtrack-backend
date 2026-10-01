@@ -35,7 +35,7 @@ def create_app(config_class=Config):
     try:
         with app.app_context():
             db.create_all()                     # Ensure tables exist
-            if not Team.query.first():          # Only seed if empty
+            if app.config.get("AUTO_SEED", True) and not Team.query.first():  # Only seed if empty
                 from seed import seed_database
                 seed_database(app)
     except Exception as e:

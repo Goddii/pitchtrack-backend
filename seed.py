@@ -9,7 +9,8 @@ Usage:
 import random
 from datetime import datetime
 from extensions import db
-from models import User, Team, Player, Match, Favorite
+from models import User, Team, Player, Match, Favorite, PlayerMatchStat
+from seed_stats import make_height, seed_player_stats
 
 ADMIN_EMAIL = "admin@pitchtrack.com"
 ADMIN_PASSWORD = "admin123"
@@ -268,6 +269,7 @@ def seed_database(app):
     """Seed the database using the provided Flask app instance."""
     with app.app_context():
         print("Clearing existing data…")
+        PlayerMatchStat.query.delete()
         Match.query.delete()
         Player.query.delete()
         Favorite.query.delete()
@@ -306,6 +308,7 @@ def seed_database(app):
                 jersey_number=p["jersey_number"],
                 nationality=p["nationality"],
                 age=p["age"],
+                height_cm=make_height(p["position"], p["name"]),
                 bio=p["bio"],
                 attributes=p["attributes"],
                 team_id=team_records[p["team_idx"]].id,
@@ -333,6 +336,9 @@ def seed_database(app):
         db.session.commit()
         print(f"  ✓ {match_count} matches created")
 
+        print("Creating player stats…")
+        seed_player_stats(app)
+
         print("\n✅ Seed complete!")
         print(f"   ─────────────────────────────────────")
         print(f"   Admin login: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
@@ -347,4 +353,11 @@ def seed():
 
 
 if __name__ == "__main__":
-    seed()
+    import sys
+
+    if "--stats" in sys.argv:
+        # Safe for a database with real rows: only adds missing heights and stats
+        from run import app
+        seed_player_stats(app)
+    else:
+        seed()
