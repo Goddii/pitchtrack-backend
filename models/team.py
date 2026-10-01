@@ -55,7 +55,7 @@ class Team(db.Model):
 
     def to_summary(self):
         """lightweight shape for nesting inside match payloads"""
-        return{"id":self.id, "name": self.name}
+        return {"id": self.id, "name": self.name, "logo_url": self.logo_url}
 
     def __repr__(self):
         return f"<Team {self.name}>"    
